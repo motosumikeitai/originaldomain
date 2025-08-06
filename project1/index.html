@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>おかねのがくしゅうアプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        
+        .coin {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bill {
+            width: 120px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* iPad第9世代対応 */
+        @media (max-width: 1024px) {
+            .coin {
+                width: 100px;
+                height: 100px;
+                margin: 12px;
+            }
+            
+            .bill {
+                width: 140px;
+                height: 70px;
+                margin: 12px;
+            }
+            
+            .nav-item {
+                padding: 16px 32px;
+                font-size: 14px;
+            }
+            
+            .text-2xl {
+                font-size: 1.75rem;
+            }
+            
+            .text-3xl {
+                font-size: 2rem;
+            }
+            
+            .text-4xl {
+                font-size: 2.5rem;
+            }
+            
+            .p-6 {
+                padding: 1.75rem;
+            }
+            
+            .gap-4 {
+                gap: 1.25rem;
+            }
+            
+            .gap-8 {
+                gap: 2.5rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .coin {
+                width: 90px;
+                height: 90px;
+                margin: 10px;
+            }
+            
+            .bill {
+                width: 130px;
+                height: 65px;
+                margin: 10px;
+            }
+            
+            .nav-item {
+                padding: 14px 24px;
+                font-size: 13px;
+            }
+            
+            .flex.space-x-4 {
+                gap: 0.75rem;
+            }
+        }
+        
+        .coin img, .bill img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+        }
+        
+        .coin:hover, .bill:hover {
+            transform: scale(1.1);
+        }
+        
+        .tray {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 4px solid #F59E0B;
+            border-radius: 16px;
+            min-height: 200px;
+            position: relative;
+        }
+        
+        .tray.drag-over {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FCD34D 100%);
+            border-color: #F59E0B;
+            transform: scale(1.02);
+        }
+        
+        .nav-item {
+            padding: 12px 24px;
+            border-radius: 16px;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .nav-item.active {
+            background-color: #8B5CF6;
+            color: white;
+            box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+        }
+        
+        .nav-item:not(.active) {
+            background-color: #F3F4F6;
+            color: #374151;
+        }
+        
+        .nav-item:not(.active):hover {
+            background-color: #EDE9FE;
+            color: #7C3AED;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .bounce-animation {
+            animation: bounce 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- ナビゲーション -->
+        <nav class="bg-white shadow-2xl rounded-b-3xl mb-8">
+            <div class="max-w-6xl mx-auto px-4">
+                                        <div class="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+                            <div class="text-lg font-bold text-purple-600 text-center md:text-left">
+                                🪙 おかねのがくしゅうアプリ
+                            </div>
+                            <div class="flex space-x-4 flex-wrap justify-center">
+                                <div class="nav-item active" onclick="showMode('conversion')">おかねのかんさん</div>
+                                <div class="nav-item" onclick="showMode('tray')">トレーモード</div>
+                                <div class="nav-item" onclick="showMode('challenge')">チャレンジ</div>
+                            </div>
+                        </div>
+            </div>
+        </nav>
+
+        <main class="container mx-auto px-4">
+            <!-- 換算モード -->
+            <div id="conversion-mode" class="mode-content">
+                <h2 class="text-3xl font-bold text-center mb-8 text-white">おかねのかんさんモード</h2>
+                <div class="max-w-4xl mx-auto">
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold text-center mb-4 text-white">コインをえらんでね！</h3>
+                        <div class="flex flex-wrap justify-center gap-4" id="coin-selection">
+                            <!-- コインがここに表示されます -->
+                        </div>
+                    </div>
+                    <div class="conversion-result bg-white rounded-2xl p-8 shadow-2xl">
+                        <h3 class="text-2xl font-bold text-center mb-6 text-gray-800" id="conversion-title">
+                            1えんはほかのコインでなんまいぶん？
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="conversion-results">
+                            <!-- 換算結果がここに表示されます -->
+                        </div>
+                        <div class="mt-8 text-center">
+                            <div class="text-xl font-bold text-green-600" id="selected-coin-display">
+                                1えん = 1えん
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- トレーモード -->
+            <div id="tray-mode" class="mode-content hidden">
+                <h2 class="text-3xl font-bold text-center mb-8 text-white">トレーモード</h2>
+                <div class="max-w-6xl mx-auto">
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div class="wallet-area">
+                            <h3 class="text-2xl font-bold text-center mb-6 text-white">しょじきん</h3>
+                            <div class="bg-white rounded-2xl p-6 shadow-2xl">
+                                <div class="flex flex-wrap justify-center gap-4" id="wallet-coins">
+                                    <!-- 所持金のコインがここに表示されます -->
+                                </div>
+                                <div class="text-center mt-4">
+                                    <p class="text-gray-600">コインをドラッグしてトレーにおいてね！</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tray-area">
+                            <div class="tray-container">
+                                <div class="tray p-6" id="tray-drop-zone">
+                                    <div class="text-center mb-4">
+                                        <h3 class="text-2xl font-bold text-yellow-800">トレー</h3>
+                                        <div class="text-3xl font-bold text-green-600 mt-2" id="tray-total">
+                                            ごうけい: 0えん
+                                        </div>
+                                    </div>
+                                    <div class="coins-area flex flex-wrap justify-center items-center min-h-32" id="tray-coins">
+                                        <div class="text-gray-500 text-lg">コインをドラッグしてここにおいてね！</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <div class="bg-green-500 text-white rounded-2xl p-6 shadow-2xl inline-block">
+                            <h3 class="text-2xl font-bold mb-2">ごうけいきんがく</h3>
+                            <div class="text-4xl font-bold" id="total-amount">0えん</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- チャレンジモード -->
+            <div id="challenge-mode" class="mode-content hidden">
+                <h2 class="text-3xl font-bold text-center mb-8 text-white">チャレンジモード</h2>
+                <div class="max-w-6xl mx-auto">
+                    <div class="challenge-display bg-blue-500 text-white rounded-2xl p-6 shadow-2xl mb-8 text-center">
+                        <h3 class="text-2xl font-bold mb-2">おだい</h3>
+                        <div class="text-3xl font-bold mb-4" id="challenge-description">315えんをだしてください</div>
+                        <div class="text-xl">もくひょう: <span id="target-amount">315</span>えん</div>
+                    </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div class="wallet-area">
+                            <h3 class="text-2xl font-bold text-center mb-6 text-white">しょじきん</h3>
+                            <div class="bg-white rounded-2xl p-6 shadow-2xl">
+                                <div class="flex flex-wrap justify-center gap-4" id="challenge-wallet-coins">
+                                    <!-- チャレンジ用の所持金コイン -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tray-area">
+                            <div class="tray-container">
+                                <div class="tray p-6" id="challenge-tray-drop-zone">
+                                    <div class="text-center mb-4">
+                                        <h3 class="text-2xl font-bold text-yellow-800">トレー</h3>
+                                        <div class="text-3xl font-bold text-green-600 mt-2" id="challenge-tray-total">
+                                            ごうけい: 0えん
+                                        </div>
+                                    </div>
+                                    <div class="coins-area flex flex-wrap justify-center items-center min-h-32" id="challenge-tray-coins">
+                                        <div class="text-gray-500 text-lg">コインをドラッグしてここにおいてね！</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <button onclick="checkAnswer()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-2xl text-xl mr-4 transition-colors">
+                            こたえあわせ
+                        </button>
+                        <button onclick="nextChallenge()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-2xl text-xl transition-colors">
+                            つぎのもんだい
+                        </button>
+                    </div>
+                    <div id="challenge-result" class="mt-8 text-center hidden">
+                        <!-- 結果表示エリア -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // データ定義（硬貨と紙幣を含む）
+        const coins = [
+            { id: '1yen', value: 1, name: '1えん', image: 'src/assets/images/1円硬貨.png', type: 'coin' },
+            { id: '5yen', value: 5, name: '5えん', image: 'src/assets/images/5円硬貨.png', type: 'coin' },
+            { id: '10yen', value: 10, name: '10えん', image: 'src/assets/images/10円硬貨.png', type: 'coin' },
+            { id: '50yen', value: 50, name: '50えん', image: 'src/assets/images/50円硬貨.png', type: 'coin' },
+            { id: '100yen', value: 100, name: '100えん', image: 'src/assets/images/100円硬貨.png', type: 'coin' },
+            { id: '500yen', value: 500, name: '500えん', image: 'src/assets/images/500円硬貨.png', type: 'coin' },
+            { id: '1000yen', value: 1000, name: '1000えん', image: 'src/assets/images/1000円紙幣.png', type: 'bill' },
+            { id: '5000yen', value: 5000, name: '5000えん', image: 'src/assets/images/5000円紙幣.png', type: 'bill' },
+            { id: '10000yen', value: 10000, name: '10000えん', image: 'src/assets/images/10000円紙幣.png', type: 'bill' }
+        ];
+
+        const challenges = [
+            { targetAmount: 315, description: '315えんをだしてください' },
+            { targetAmount: 150, description: '150えんをだしてください' },
+            { targetAmount: 250, description: '250えんをだしてください' },
+            { targetAmount: 75, description: '75えんをだしてください' },
+            { targetAmount: 420, description: '420えんをだしてください' },
+            { targetAmount: 180, description: '180えんをだしてください' },
+            { targetAmount: 95, description: '95えんをだしてください' },
+            { targetAmount: 360, description: '360えんをだしてください' },
+            { targetAmount: 1500, description: '1500えんをだしてください' },
+            { targetAmount: 2500, description: '2500えんをだしてください' },
+            { targetAmount: 3500, description: '3500えんをだしてください' },
+            { targetAmount: 7500, description: '7500えんをだしてください' }
+        ];
+
+        // 状態管理
+        let currentMode = 'conversion';
+        let selectedCoin = coins[0];
+        let trayItems = [];
+        let challengeTrayItems = [];
+        let currentChallenge = challenges[0];
+
+        // コイン・紙幣要素を作成（画像付き）
+        function createMoneyElement(money, onClick = null, className = '', draggable = false) {
+            const moneyDiv = document.createElement('div');
+            const elementClass = money.type === 'bill' ? 'bill' : 'coin';
+            moneyDiv.className = `${elementClass} ${className}`;
+            moneyDiv.innerHTML = `
+                <img src="${money.image}" alt="${money.name}" title="${money.name} ${money.value}えん">
+            `;
+            
+            if (draggable) {
+                moneyDiv.draggable = true;
+                moneyDiv.setAttribute('data-coin-id', money.id);
+                
+                // ドラッグ開始イベント
+                moneyDiv.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', money.id);
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+            }
+            
+            if (onClick) {
+                moneyDiv.onclick = onClick;
+            }
+            return moneyDiv;
+        }
+
+        // ドラッグ&ドロップイベントの設定
+        function setupDragAndDrop() {
+            // 既存のイベントリスナーを削除
+            const trayDropZone = document.getElementById('tray-drop-zone');
+            const challengeTrayDropZone = document.getElementById('challenge-tray-drop-zone');
+            
+            if (trayDropZone) {
+                // 既存のイベントリスナーを削除
+                const newTrayDropZone = trayDropZone.cloneNode(true);
+                trayDropZone.parentNode.replaceChild(newTrayDropZone, trayDropZone);
+                
+                // 新しいイベントリスナーを追加
+                newTrayDropZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    this.classList.add('drag-over');
+                });
+                
+                newTrayDropZone.addEventListener('dragleave', function(e) {
+                    this.classList.remove('drag-over');
+                });
+                
+                newTrayDropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    const coinId = e.dataTransfer.getData('text/plain');
+                    const coin = coins.find(c => c.id === coinId);
+                    if (coin) {
+                        addToTray(coin);
+                    }
+                });
+            }
+
+            if (challengeTrayDropZone) {
+                // 既存のイベントリスナーを削除
+                const newChallengeTrayDropZone = challengeTrayDropZone.cloneNode(true);
+                challengeTrayDropZone.parentNode.replaceChild(newChallengeTrayDropZone, challengeTrayDropZone);
+                
+                // 新しいイベントリスナーを追加
+                newChallengeTrayDropZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    this.classList.add('drag-over');
+                });
+                
+                newChallengeTrayDropZone.addEventListener('dragleave', function(e) {
+                    this.classList.remove('drag-over');
+                });
+                
+                newChallengeTrayDropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    const coinId = e.dataTransfer.getData('text/plain');
+                    const coin = coins.find(c => c.id === coinId);
+                    if (coin) {
+                        addToChallengeTray(coin);
+                    }
+                });
+            }
+        }
+
+        // モード切り替え
+        function showMode(mode) {
+            currentMode = mode;
+            
+            // ナビゲーション更新
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // コンテンツ表示切り替え
+            document.querySelectorAll('.mode-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`${mode}-mode`).classList.remove('hidden');
+            
+            // モード別初期化
+            if (mode === 'conversion') {
+                initConversionMode();
+            } else if (mode === 'tray') {
+                initTrayMode();
+            } else if (mode === 'challenge') {
+                initChallengeMode();
+            }
+            
+            // ドラッグ&ドロップ設定を更新
+            setTimeout(setupDragAndDrop, 100);
+        }
+
+        // 換算モード初期化
+        function initConversionMode() {
+            const coinSelection = document.getElementById('coin-selection');
+            coinSelection.innerHTML = '';
+            
+            coins.forEach(coin => {
+                const coinElement = createMoneyElement(coin, () => {
+                    selectedCoin = coin;
+                    updateConversionDisplay();
+                });
+                coinSelection.appendChild(coinElement);
+            });
+            
+            updateConversionDisplay();
+        }
+
+        // 換算表示更新
+        function updateConversionDisplay() {
+            document.getElementById('conversion-title').textContent = `${selectedCoin.name}はほかのコインでなんまいぶん？`;
+            document.getElementById('selected-coin-display').textContent = `${selectedCoin.name} = ${selectedCoin.value}えん`;
+            
+            const resultsContainer = document.getElementById('conversion-results');
+            resultsContainer.innerHTML = '';
+            
+            coins.forEach(coin => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `text-center p-4 rounded-lg ${coin.id === selectedCoin.id ? 'bg-yellow-200 border-2 border-yellow-400' : 'bg-gray-100'}`;
+                
+                const coinElement = createMoneyElement(coin);
+                resultDiv.appendChild(coinElement);
+                
+                const conversionText = document.createElement('div');
+                conversionText.className = 'mt-2 text-lg font-bold text-gray-700';
+                
+                if (selectedCoin.value === coin.value) {
+                    conversionText.textContent = 'おなじきんがくです';
+                } else if (selectedCoin.value > coin.value) {
+                    const count = Math.floor(selectedCoin.value / coin.value);
+                    conversionText.textContent = `${count}まい`;
+                } else {
+                    const count = Math.floor(coin.value / selectedCoin.value);
+                    conversionText.textContent = `${count}まい`;
+                }
+                
+                resultDiv.appendChild(conversionText);
+                resultsContainer.appendChild(resultDiv);
+            });
+        }
+
+        // トレーモード初期化
+        function initTrayMode() {
+            trayItems = [];
+            updateTrayDisplay();
+        }
+
+        // トレー表示更新
+        function updateTrayDisplay() {
+            const walletCoins = document.getElementById('wallet-coins');
+            const trayCoins = document.getElementById('tray-coins');
+            const totalAmount = document.getElementById('total-amount');
+            const trayTotal = document.getElementById('tray-total');
+            
+            // 所持金表示
+            walletCoins.innerHTML = '';
+            coins.forEach(coin => {
+                const coinElement = createMoneyElement(coin, null, '', true);
+                walletCoins.appendChild(coinElement);
+            });
+            
+            // トレー表示
+            trayCoins.innerHTML = '';
+            if (trayItems.length === 0) {
+                trayCoins.innerHTML = '<div class="text-gray-500 text-lg">コインをここにおいてね！</div>';
+            } else {
+                trayItems.forEach(item => {
+                    const coinElement = createMoneyElement(item.coin, () => removeFromTray(item.id));
+                    const container = document.createElement('div');
+                    container.className = 'relative';
+                    container.appendChild(coinElement);
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold hover:bg-red-600';
+                    removeBtn.textContent = '×';
+                    removeBtn.onclick = () => removeFromTray(item.id);
+                    container.appendChild(removeBtn);
+                    
+                    trayCoins.appendChild(container);
+                });
+            }
+            
+            // 合計更新
+            const total = trayItems.reduce((sum, item) => sum + item.coin.value, 0);
+            totalAmount.textContent = `${total}えん`;
+            trayTotal.textContent = `ごうけい: ${total}えん`;
+        }
+
+        // トレーに追加
+        function addToTray(coin) {
+            const newItem = {
+                id: `${coin.id}-${Date.now()}`,
+                coin: coin
+            };
+            trayItems.push(newItem);
+            updateTrayDisplay();
+        }
+
+        // トレーから削除
+        function removeFromTray(itemId) {
+            trayItems = trayItems.filter(item => item.id !== itemId);
+            updateTrayDisplay();
+        }
+
+        // チャレンジモード初期化
+        function initChallengeMode() {
+            challengeTrayItems = [];
+            currentChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+            updateChallengeDisplay();
+        }
+
+        // チャレンジ表示更新
+        function updateChallengeDisplay() {
+            document.getElementById('challenge-description').textContent = currentChallenge.description;
+            document.getElementById('target-amount').textContent = currentChallenge.targetAmount;
+            
+            const walletCoins = document.getElementById('challenge-wallet-coins');
+            const trayCoins = document.getElementById('challenge-tray-coins');
+            const trayTotal = document.getElementById('challenge-tray-total');
+            
+            // 所持金表示
+            walletCoins.innerHTML = '';
+            coins.forEach(coin => {
+                const coinElement = createMoneyElement(coin, null, '', true);
+                walletCoins.appendChild(coinElement);
+            });
+            
+            // トレー表示
+            trayCoins.innerHTML = '';
+            if (challengeTrayItems.length === 0) {
+                trayCoins.innerHTML = '<div class="text-gray-500 text-lg">コインをここにおいてね！</div>';
+            } else {
+                challengeTrayItems.forEach(item => {
+                    const coinElement = createMoneyElement(item.coin, () => removeFromChallengeTray(item.id));
+                    const container = document.createElement('div');
+                    container.className = 'relative';
+                    container.appendChild(coinElement);
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold hover:bg-red-600';
+                    removeBtn.textContent = '×';
+                    removeBtn.onclick = () => removeFromChallengeTray(item.id);
+                    container.appendChild(removeBtn);
+                    
+                    trayCoins.appendChild(container);
+                });
+            }
+            
+            // 合計更新
+            const total = challengeTrayItems.reduce((sum, item) => sum + item.coin.value, 0);
+            trayTotal.textContent = `ごうけい: ${total}えん`;
+        }
+
+        // チャレンジトレーに追加
+        function addToChallengeTray(coin) {
+            const newItem = {
+                id: `${coin.id}-${Date.now()}`,
+                coin: coin
+            };
+            challengeTrayItems.push(newItem);
+            updateChallengeDisplay();
+        }
+
+        // チャレンジトレーから削除
+        function removeFromChallengeTray(itemId) {
+            challengeTrayItems = challengeTrayItems.filter(item => item.id !== itemId);
+            updateChallengeDisplay();
+        }
+
+        // 答え合わせ
+        function checkAnswer() {
+            const total = challengeTrayItems.reduce((sum, item) => sum + item.coin.value, 0);
+            const isCorrect = total === currentChallenge.targetAmount;
+            
+            const resultDiv = document.getElementById('challenge-result');
+            resultDiv.className = `mt-8 text-center ${isCorrect ? 'bounce-animation' : ''}`;
+            resultDiv.innerHTML = `
+                <div class="rounded-2xl p-6 shadow-2xl inline-block ${isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
+                    <h3 class="text-2xl font-bold mb-2">
+                        ${isCorrect ? '🎉 せいかい！' : '😅 もういちどチャレンジしてみよう'}
+                    </h3>
+                    <div class="text-xl">
+                        あなたのこたえ: ${total}えん
+                    </div>
+                    ${!isCorrect ? `<div class="text-lg mt-2">せいかい: ${currentChallenge.targetAmount}えん</div>` : ''}
+                </div>
+            `;
+            resultDiv.classList.remove('hidden');
+        }
+
+        // 次の問題
+        function nextChallenge() {
+            challengeTrayItems = [];
+            currentChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+            document.getElementById('challenge-result').classList.add('hidden');
+            updateChallengeDisplay();
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initConversionMode();
+            setupDragAndDrop();
+        });
+    </script>
+</body>
+</html> 
